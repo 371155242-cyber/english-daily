@@ -98,7 +98,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;
 <div id="progressArea" class="hidden">
   <div class="stats">
     <div class="stat"><div class="num" id="totalLearned">0</div><div class="label">已学句子</div></div>
-    <div class="stat"><div class="num" id="totalAll">60</div><div class="label">总计</div></div>
+    <div class="stat"><div class="num" id="totalAll">110</div><div class="label">总计</div></div>
   </div>
   <div style="margin-top:16px" id="wordList"></div>
   <button class="btn btn-ghost" onclick="resetProgress()" style="margin-top:16px">🔄 重新开始</button>
@@ -197,7 +197,68 @@ const UNITS = {
 
 // 扁平化所有句子（含自定义）
 function getAllWords() {
-  let words = [];
+  let words = [];,
+	],
+	"餐饮美食": [
+	  {en:"I am hungry.", zh:"我饿了。", tip:"hungry = 饿"},
+	  {en:"What do you recommend?", zh:"你有什么推荐的？", tip:"recommend = 推荐"},
+	  {en:"I would like a coffee.", zh:"我想要一杯咖啡。", tip:"would like = 想要（礼貌）"},
+	  {en:"The food is delicious.", zh:"这个很好吃。", tip:"delicious = 美味"},
+	  {en:"Can I see the menu?", zh:"我能看看菜单吗？", tip:"menu = 菜单"},
+	  {en:"No spicy please.", zh:"请不要放辣。", tip:"spicy = 辣"},
+	  {en:"I am full.", zh:"我吃饱了。", tip:"full = 饱"},
+	  {en:"Another beer please.", zh:"再来一瓶啤酒。", tip:"another = 再来一个"},
+	  {en:"Can we sit outside?", zh:"我们能坐外面吗？", tip:"outside = 外面"},
+	  {en:"Is service charge included?", zh:"包含服务费吗？", tip:"service charge = 服务费"}
+	],
+	"时间天气": [
+	  {en:"What time is it?", zh:"现在几点了？", tip:"what time = 几点"},
+	  {en:"It is half past two.", zh:"现在是两点半。", tip:"half past = 半"},
+	  {en:"I will be there in 10 minutes.", zh:"我10分钟后到。", tip:"in 10 minutes = 10分钟后"},
+	  {en:"The meeting is at 3 o'clock.", zh:"会议在3点。", tip:"meeting = 会议"},
+	  {en:"It is raining today.", zh:"今天下雨了。", tip:"raining = 下雨"},
+	  {en:"It is very hot outside.", zh:"外面很热。", tip:"hot = 热"},
+	  {en:"Tomorrow will be sunny.", zh:"明天会是晴天。", tip:"sunny = 晴天"},
+	  {en:"What is the temperature?", zh:"今天多少度？", tip:"temperature = 温度"},
+	  {en:"I am late, sorry.", zh:"我迟到了，抱歉。", tip:"late = 迟到"},
+	  {en:"Let's meet next week.", zh:"我们下周见。", tip:"next week = 下周"}
+	],
+	"情绪表达": [
+	  {en:"I am so happy today.", zh:"我今天很开心。", tip:"happy = 开心"},
+	  {en:"Don't worry about it.", zh:"别担心。", tip:"worry = 担心"},
+	  {en:"I feel a bit sad.", zh:"我有点难过。", tip:"sad = 难过"},
+	  {en:"That's so funny!", zh:"太好笑了！", tip:"funny = 好笑"},
+	  {en:"I am really angry.", zh:"我真的很生气。", tip:"angry = 生气"},
+	  {en:"Everything will be fine.", zh:"一切都会好的。", tip:"fine = 好的"},
+	  {en:"I miss you.", zh:"我想你了。", tip:"miss = 想念"},
+	  {en:"I am so proud of you.", zh:"我为你骄傲。", tip:"proud = 骄傲"},
+	  {en:"Calm down, take it easy.", zh:"冷静，放轻松。", tip:"calm down = 冷静"},
+	  {en:"You can do it!", zh:"你能做到的！", tip:"can do = 能做到"}
+	],
+	"看医生": [
+	  {en:"I don't feel well.", zh:"我不太舒服。", tip:"feel well = 感觉好"},
+	  {en:"I have a headache.", zh:"我头疼。", tip:"headache = 头疼"},
+	  {en:"My stomach hurts.", zh:"我肚子疼。", tip:"stomach = 肚子"},
+	  {en:"I need to see a doctor.", zh:"我需要看医生。", tip:"see a doctor = 看医生"},
+	  {en:"Do you have any medicine?", zh:"有药吗？", tip:"medicine = 药"},
+	  {en:"I am allergic to this.", zh:"我对这个过敏。", tip:"allergic = 过敏"},
+	  {en:"I feel much better now.", zh:"我现在好多了。", tip:"better = 更好"},
+	  {en:"Take this medicine twice a day.", zh:"这药一天吃两次。", tip:"twice a day = 一天两次"},
+	  {en:"Where is the pharmacy?", zh:"药店在哪？", tip:"pharmacy = 药店"},
+	  {en:"Get some rest.", zh:"好好休息。", tip:"rest = 休息"}
+	],
+	"电话邮件": [
+	  {en:"Hello, this is Xu speaking.", zh:"你好，我是小徐。", tip:"this is = 我是（电话用语）"},
+	  {en:"May I speak to Mr. Li?", zh:"我找李先生。", tip:"may I speak = 我找"},
+	  {en:"Please hold on.", zh:"请稍等，别挂。", tip:"hold on = 等一下"},
+	  {en:"I will call you back.", zh:"我打回给你。", tip:"call back = 回电话"},
+	  {en:"Sorry, wrong number.", zh:"抱歉，打错了。", tip:"wrong number = 打错电话"},
+	  {en:"I sent you an email.", zh:"我给你发了邮件。", tip:"sent = 发送了"},
+	  {en:"Please check your inbox.", zh:"请查看收件箱。", tip:"inbox = 收件箱"},
+	  {en:"Can you reply to my message?", zh:"能回复我的消息吗？", tip:"reply = 回复"},
+	  {en:"The signal is bad here.", zh:"这里信号不好。", tip:"signal = 信号"},
+	  {en:"Let me write it down.", zh:"让我记下来。", tip:"write down = 记下来"}
+	
   Object.entries(UNITS).forEach(([unit, items]) => {
     items.forEach(item => words.push({...item, unit}));
   });
