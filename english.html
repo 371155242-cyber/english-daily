@@ -42,6 +42,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;
 </head>
 <body>
 
+<div id="swAlert" style="display:none;background:#f59e0b;color:#000;text-align:center;padding:10px;font-size:14px;cursor:pointer" onclick="location.reload()">
+🔄 有新内容！点这里更新 →
+</div>
+
 <div class="header">
   <h1>📖 每日英语</h1>
   <div class="streak" id="streakText">🔥 连续 0 天</div>
@@ -505,8 +509,18 @@ function switchTab(tab) {
 // ── 离线缓存 ──
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/english-daily/sw.js')
-    .then(() => console.log('SW registered - offline ready'))
-    .catch(() => console.log('SW skipped'));
+    .then(reg => {
+      console.log('SW registered');
+      reg.onupdatefound = () => {
+        let w = reg.installing;
+        w.onstatechange = () => {
+          if (w.state === 'installed' && navigator.serviceWorker.controller) {
+            let a = document.getElementById('swAlert');
+            if (a) a.style.display = 'block';
+          }
+        };
+      };
+    });
 }
 
 // ── 初始化 ──
