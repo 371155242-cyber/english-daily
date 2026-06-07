@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="每日英语">
+<title>每日英语</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding:16px;-webkit-tap-highlight-color:transparent}
+.header{text-align:center;padding:20px 0 10px}
+.header h1{font-size:24px;margin-bottom:4px}
+.header .streak{font-size:14px;color:#94a3b8}
+.tabs{display:flex;gap:8px;margin:16px 0}
+.tab{flex:1;padding:12px;text-align:center;border-radius:12px;background:#1e293b;color:#94a3b8;border:none;font-size:15px;cursor:pointer;transition:all .2s}
+.tab.active{background:#3b82f6;color:#fff;font-weight:600}
+.card{background:#1e293b;border-radius:16px;padding:24px;margin:16px 0;text-align:center;min-height:200px;display:flex;flex-direction:column;justify-content:center;transition:transform .3s}
+.card .en{font-size:26px;font-weight:700;color:#f1f5f9;margin-bottom:12px;line-height:1.4}
+.card .zh{font-size:20px;color:#94a3b8;margin-bottom:8px}
+.card .tip{font-size:14px;color:#64748b;margin-top:8px;padding:8px 12px;background:#0f172a;border-radius:8px}
+.card .num{font-size:13px;color:#475569;margin-bottom:12px}
+.btn{display:block;width:100%;padding:16px;border:none;border-radius:12px;font-size:17px;font-weight:600;cursor:pointer;margin:8px 0;transition:all .15s}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:#3b82f6;color:#fff}
+.btn-outline{background:transparent;color:#3b82f6;border:2px solid #3b82f6}
+.btn-done{background:#10b981;color:#fff}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-ghost{background:#334155;color:#e2e8f0}
+.progress-bar{height:4px;background:#1e293b;border-radius:2px;margin:12px 0;overflow:hidden}
+.progress-bar .fill{height:100%;background:#3b82f6;transition:width .3s}
+.stats{display:flex;gap:12px;margin:12px 0}
+.stat{flex:1;text-align:center;background:#1e293b;border-radius:12px;padding:16px}
+.stat .num{font-size:28px;font-weight:700;color:#f1f5f9}
+.stat .label{font-size:13px;color:#94a3b8;margin-top:4px}
+.quiz-answer{display:none}
+.quiz-answer.show{display:block}
+.empty{text-align:center;padding:40px 20px;color:#64748b;font-size:16px;line-height:1.8}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📖 每日英语</h1>
+  <div class="streak" id="streakText">🔥 连续 0 天</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('learn')">📚 学习</button>
+  <button class="tab" onclick="switchTab('quiz')">📝 测验</button>
+  <button class="tab" onclick="switchTab('progress')">📊 进度</button>
+</div>
+
+<div id="progressBar" class="progress-bar"><div class="fill" id="progressFill"></div></div>
+
+<!-- 学习卡片 -->
+<div id="learnCard" class="card">
+  <div class="num" id="learnNum"></div>
+  <div class="en" id="learnEn"></div>
+  <div class="zh" id="learnZh" style="display:none"></div>
+  <div class="tip" id="learnTip" style="display:none"></div>
+  <button class="btn btn-primary" id="learnBtn" onclick="flipCard()">👆 点击看中文</button>
+  <button class="btn btn-done hidden" id="nextBtn" onclick="nextCard()">✅ 记住了，下一句 →</button>
+</div>
+
+<div id="learnDone" class="empty hidden">
+  <p style="font-size:40px">🎉</p>
+  <p>今天的学习完成！</p>
+  <p>去"测验"复习一下</p>
+  <button class="btn btn-primary" onclick="switchTab('quiz')" style="margin-top:16px">去测验 →</button>
+</div>
+
+<!-- 测验 -->
+<div id="quizArea" class="hidden">
+  <div class="card">
+    <div class="num" id="quizNum"></div>
+    <div class="zh" id="quizZh"></div>
+    <div class="quiz-answer" id="quizAnswer">
+      <div class="en" style="margin-top:12px" id="quizEn"></div>
+      <div class="tip" id="quizTip"></div>
+    </div>
+    <button class="btn btn-primary" id="showBtn" onclick="showAnswer()">👆 我想想...看答案</button>
+    <div class="hidden" id="quizBtns" style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-done" onclick="quizResult(true)">✅ 对了</button>
+      <button class="btn btn-danger" onclick="quizResult(false)">❌ 错了</button>
+    </div>
+  </div>
+  <div class="stats hidden" id="quizStats">
+    <div class="stat"><div class="num" id="quizScore">0</div><div class="label">正确</div></div>
+    <div class="stat"><div class="num" id="quizTotal">0</div><div class="label">总题数</div></div>
+  </div>
+</div>
+
+<!-- 进度 -->
+<div id="progressArea" class="hidden">
+  <div class="stats">
+    <div class="stat"><div class="num" id="totalLearned">0</div><div class="label">已学句子</div></div>
+    <div class="stat"><div class="num" id="totalAll">30</div><div class="label">总计</div></div>
+  </div>
+  <div style="margin-top:16px" id="wordList"></div>
+  <button class="btn btn-ghost" onclick="resetProgress()" style="margin-top:16px">🔄 重新开始</button>
+</div>
+
+<script>
+// ── 数据 ──
+const UNITS = {
+  "基础万能句": [
+    {en:"I am a designer.", zh:"我是一名设计师。", tip:"自我介绍开头的万能句"},
+    {en:"This is the floor plan.", zh:"这是平面图。", tip:"floor plan = 平面图，最常用"},
+    {en:"How much does it cost?", zh:"这个多少钱？", tip:"cost = 花费，问价格"},
+    {en:"I need more time.", zh:"我需要更多时间。", tip:"need = 需要"},
+    {en:"Can you send me the file?", zh:"你能把文件发给我吗？", tip:"send = 发送"},
+    {en:"I will finish it tomorrow.", zh:"我明天完成。", tip:"will = 将来会"},
+    {en:"Please wait a moment.", zh:"请稍等一下。", tip:"wait = 等待"},
+    {en:"That looks great.", zh:"那个看起来很棒。", tip:"looks = 看起来"},
+    {en:"Where is the kitchen?", zh:"厨房在哪里？", tip:"where = 哪里"},
+    {en:"Let me check.", zh:"让我查一下。", tip:"check = 检查/查看"}
+  ],
+  "日常对话": [
+    {en:"I get up at seven.", zh:"我七点起床。", tip:"get up = 起床"},
+    {en:"What do you want to eat?", zh:"你想吃什么？", tip:"want to = 想要"},
+    {en:"I don't understand.", zh:"我不明白。", tip:"don't = 不，万能否定"},
+    {en:"Can you help me?", zh:"你能帮我吗？", tip:"help = 帮助"},
+    {en:"I am on my way.", zh:"我在路上了。", tip:"on my way = 在路上"},
+    {en:"See you tomorrow.", zh:"明天见。", tip:"see you = 再见"},
+    {en:"How was your day?", zh:"你今天怎么样？", tip:"how was = 怎么样（过去）"},
+    {en:"I am tired.", zh:"我累了。", tip:"tired = 累"},
+    {en:"That's too expensive.", zh:"那个太贵了。", tip:"expensive = 贵"},
+    {en:"I like this one.", zh:"我喜欢这个。", tip:"like = 喜欢"}
+  ],
+  "设计场景": [
+    {en:"The wall color is white.", zh:"墙的颜色是白色。", tip:"wall = 墙"},
+    {en:"This room is too small.", zh:"这个房间太小了。", tip:"room = 房间，small = 小"},
+    {en:"We need more light here.", zh:"这里需要更多光线。", tip:"light = 光/灯"},
+    {en:"The door should open this way.", zh:"门应该朝这边开。", tip:"door = 门，should = 应该"},
+    {en:"What material is this?", zh:"这是什么材料？", tip:"material = 材料"},
+    {en:"The ceiling height is 2.8 meters.", zh:"层高是2.8米。", tip:"ceiling = 天花板/层高"},
+    {en:"I prefer wood floor.", zh:"我更喜欢木地板。", tip:"prefer = 更喜欢，wood = 木头"},
+    {en:"The budget is not enough.", zh:"预算不够。", tip:"budget = 预算，enough = 足够"},
+    {en:"Let me draw it for you.", zh:"我画给你看。", tip:"draw = 画"},
+    {en:"This is the final design.", zh:"这是最终方案。", tip:"final = 最终的"}
+  ]
+};
+
+// 扁平化所有句子
+let allWords = [];
+Object.entries(UNITS).forEach(([unit, items]) => {
+  items.forEach(item => allWords.push({...item, unit}));
+});
+
+// ── 状态 ──
+let state = {
+  learned: JSON.parse(localStorage.getItem('en_learned') || '[]'),
+  streak: parseInt(localStorage.getItem('en_streak') || '0'),
+  lastStudy: localStorage.getItem('en_last') || '',
+  currentCard: 0,
+  dailyPool: [],
+  cardFlipped: false,
+  quizWords: [],
+  quizIndex: 0,
+  quizScore: 0,
+};
+
+function save() {
+  localStorage.setItem('en_learned', JSON.stringify(state.learned));
+  localStorage.setItem('en_streak', state.streak);
+  localStorage.setItem('en_last', state.lastStudy);
+}
+
+function isLearned(en) { return state.learned.includes(en); }
+
+// ── 学习 ──
+function prepareLearn() {
+  let unlearned = allWords.filter(w => !isLearned(w.en));
+  if (unlearned.length === 0) {
+    unlearned = [...allWords]; // 全部学完就重新来
+    state.learned = [];
+    save();
+  }
+  state.dailyPool = unlearned.sort(() => Math.random() - 0.5).slice(0, 5);
+  state.currentCard = 0;
+  state.cardFlipped = false;
+
+  if (state.lastStudy !== new Date().toDateString()) {
+    // 检查是否连续
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (state.lastStudy === yesterday.toDateString()) {
+      state.streak++;
+    } else if (state.lastStudy !== new Date().toDateString()) {
+      state.streak = 1;
+    }
+    state.lastStudy = new Date().toDateString();
+    save();
+  }
+}
+
+function showCard() {
+  if (state.currentCard >= state.dailyPool.length) {
+    document.getElementById('learnCard').classList.add('hidden');
+    document.getElementById('learnDone').classList.remove('hidden');
+    if (!isLearned(state.dailyPool[state.dailyPool.length-1]?.en) && state.dailyPool.length > 0) {
+      // mark last as learned
+    }
+    updateProgress();
+    return;
+  }
+
+  let w = state.dailyPool[state.currentCard];
+  document.getElementById('learnCard').classList.remove('hidden');
+  document.getElementById('learnDone').classList.add('hidden');
+  document.getElementById('learnNum').textContent = `${state.currentCard + 1} / ${state.dailyPool.length}`;
+  document.getElementById('learnEn').textContent = w.en;
+  document.getElementById('learnZh').textContent = w.zh;
+  document.getElementById('learnZh').style.display = 'none';
+  document.getElementById('learnTip').textContent = `💡 ${w.tip}`;
+  document.getElementById('learnTip').style.display = 'none';
+  document.getElementById('learnBtn').classList.remove('hidden');
+  document.getElementById('nextBtn').classList.add('hidden');
+  state.cardFlipped = false;
+}
+
+function flipCard() {
+  document.getElementById('learnZh').style.display = 'block';
+  document.getElementById('learnTip').style.display = 'block';
+  document.getElementById('learnBtn').classList.add('hidden');
+  document.getElementById('nextBtn').classList.remove('hidden');
+  state.cardFlipped = true;
+}
+
+function nextCard() {
+  let w = state.dailyPool[state.currentCard];
+  if (!isLearned(w.en)) {
+    state.learned.push(w.en);
+    save();
+  }
+  state.currentCard++;
+  showCard();
+  updateProgress();
+}
+
+// ── 测验 ──
+function prepareQuiz() {
+  let pool = allWords.filter(w => isLearned(w.en));
+  if (pool.length === 0) {
+    pool = allWords;
+  }
+  state.quizWords = pool.sort(() => Math.random() - 0.5).slice(0, 10);
+  state.quizIndex = 0;
+  state.quizScore = 0;
+}
+
+function showQuiz() {
+  if (state.quizIndex >= state.quizWords.length) {
+    document.getElementById('quizArea').innerHTML = `
+      <div class="empty">
+        <p style="font-size:40px;">${state.quizScore >= 8 ? '🔥' : state.quizScore >= 5 ? '💪' : '📖'}</p>
+        <p>测验完成！</p>
+        <p style="font-size:28px;font-weight:700;color:#f1f5f9">${state.quizScore} / ${state.quizWords.length}</p>
+        <p>${state.quizScore >= 8 ? '太棒了！' : state.quizScore >= 5 ? '继续加油！' : '多练练！'}</p>
+        <button class="btn btn-primary" onclick="prepareQuiz();showQuiz();switchTab('quiz')" style="margin-top:16px">再来一次</button>
+      </div>`;
+    document.getElementById('quizStats').classList.remove('hidden');
+    document.getElementById('quizScore').textContent = state.quizScore;
+    document.getElementById('quizTotal').textContent = state.quizWords.length;
+    updateProgress();
+    return;
+  }
+
+  let w = state.quizWords[state.quizIndex];
+  document.getElementById('quizNum').textContent = `${state.quizIndex + 1} / ${state.quizWords.length}`;
+  document.getElementById('quizZh').textContent = w.zh;
+  document.getElementById('quizEn').textContent = w.en;
+  document.getElementById('quizTip').textContent = `💡 ${w.tip}`;
+  document.getElementById('quizAnswer').classList.remove('show');
+  document.getElementById('showBtn').classList.remove('hidden');
+  document.getElementById('quizBtns').classList.add('hidden');
+  document.getElementById('quizStats').classList.add('hidden');
+}
+
+function showAnswer() {
+  document.getElementById('quizAnswer').classList.add('show');
+  document.getElementById('showBtn').classList.add('hidden');
+  document.getElementById('quizBtns').classList.remove('hidden');
+}
+
+function quizResult(correct) {
+  if (correct) state.quizScore++;
+  state.quizIndex++;
+  showQuiz();
+}
+
+// ── 进度 ──
+function updateProgress() {
+  let learned = state.learned.length;
+  let total = allWords.length;
+  document.getElementById('totalLearned').textContent = learned;
+  document.getElementById('streakText').textContent = `🔥 连续 ${state.streak} 天`;
+  document.getElementById('progressFill').style.width = `${(learned / total) * 100}%`;
+
+  // 进度列表
+  let html = '';
+  Object.entries(UNITS).forEach(([unit, items]) => {
+    let unitLearned = items.filter(w => isLearned(w.en)).length;
+    html += `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:14px;font-weight:600">${unit}</span>
+        <span style="font-size:13px;color:#94a3b8">${unitLearned}/${items.length}</span>
+      </div>`;
+    items.forEach(w => {
+      let done = isLearned(w.en);
+      html += `<div style="display:flex;align-items:center;padding:6px 8px;margin:2px 0;background:#1e293b;border-radius:8px;font-size:14px">
+        <span style="margin-right:8px">${done ? '✅' : '⬜'}</span>
+        <span style="color:#e2e8f0">${w.en}</span>
+        <span style="color:#64748b;margin-left:auto;font-size:12px">${w.zh}</span>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('wordList').innerHTML = html;
+}
+
+function resetProgress() {
+  if (confirm('确定要重新开始吗？所有进度会清零。')) {
+    state.learned = [];
+    state.streak = 0;
+    state.lastStudy = '';
+    save();
+    prepareLearn();
+    showCard();
+    prepareQuiz();
+    updateProgress();
+  }
+}
+
+// ── Tab 切换 ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (tab === 'learn') document.querySelectorAll('.tab')[0].classList.add('active');
+  if (tab === 'quiz') document.querySelectorAll('.tab')[1].classList.add('active');
+  if (tab === 'progress') document.querySelectorAll('.tab')[2].classList.add('active');
+
+  document.getElementById('learnCard').classList.add('hidden');
+  document.getElementById('learnDone').classList.add('hidden');
+  document.getElementById('quizArea').classList.add('hidden');
+  document.getElementById('progressArea').classList.add('hidden');
+
+  if (tab === 'learn') {
+    prepareLearn();
+    showCard();
+  } else if (tab === 'quiz') {
+    document.getElementById('quizArea').classList.remove('hidden');
+    prepareQuiz();
+    showQuiz();
+  } else if (tab === 'progress') {
+    document.getElementById('progressArea').classList.remove('hidden');
+    updateProgress();
+  }
+}
+
+// ── 初始化 ──
+prepareLearn();
+showCard();
+prepareQuiz();
+updateProgress();
+</script>
+</body>
+</html>
