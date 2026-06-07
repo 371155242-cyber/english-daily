@@ -360,6 +360,13 @@ function switchTab(tab) {
   }
 }
 
+// ── 离线缓存 ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/english-daily/sw.js')
+    .then(() => console.log('SW registered - offline ready'))
+    .catch(() => console.log('SW skipped'));
+}
+
 // ── 初始化 ──
 prepareLearn();
 showCard();
