@@ -51,6 +51,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;
   <button class="tab active" onclick="switchTab('learn')">📚 学习</button>
   <button class="tab" onclick="switchTab('quiz')">📝 测验</button>
   <button class="tab" onclick="switchTab('progress')">📊 进度</button>
+  <button class="tab" onclick="switchTab('add')">✏️ 添加</button>
 </div>
 
 <div id="progressBar" class="progress-bar"><div class="fill" id="progressFill"></div></div>
@@ -97,11 +98,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f172a;
 <div id="progressArea" class="hidden">
   <div class="stats">
     <div class="stat"><div class="num" id="totalLearned">0</div><div class="label">已学句子</div></div>
-    <div class="stat"><div class="num" id="totalAll">30</div><div class="label">总计</div></div>
+    <div class="stat"><div class="num" id="totalAll">60</div><div class="label">总计</div></div>
   </div>
   <div style="margin-top:16px" id="wordList"></div>
   <button class="btn btn-ghost" onclick="resetProgress()" style="margin-top:16px">🔄 重新开始</button>
 </div>
+
+<!-- 添加句子 -->
+<div id="addArea" class="hidden">
+  <div class="card">
+    <div style="font-size:20px;margin-bottom:16px">✏️ 添加你自己的句子</div>
+    <input type="text" id="addEn" placeholder="英文句子" style="width:100%;padding:12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#e2e8f0;font-size:16px;margin-bottom:8px">
+    <input type="text" id="addZh" placeholder="中文翻译" style="width:100%;padding:12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#e2e8f0;font-size:16px;margin-bottom:8px">
+    <input type="text" id="addTip" placeholder="记忆技巧（可选）" style="width:100%;padding:12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#e2e8f0;font-size:16px;margin-bottom:12px">
+    <button class="btn btn-primary" onclick="addCustomSentence()">✅ 添加到词库</button>
+  </div>
+  <div id="addMsg" style="text-align:center;color:#10b981;font-size:16px;margin-top:8px"></div>
+</div>
+
 
 <script>
 // ── 数据 ──
@@ -142,13 +156,57 @@ const UNITS = {
     {en:"Let me draw it for you.", zh:"我画给你看。", tip:"draw = 画"},
     {en:"This is the final design.", zh:"这是最终方案。", tip:"final = 最终的"}
   ]
+,
+	"出行旅游": [
+	  {en:"Where is the bathroom?", zh:"洗手间在哪里？", tip:"bathroom = 洗手间"},
+	  {en:"How do I get there?", zh:"我怎么去那里？", tip:"get there = 到那里"},
+	  {en:"I am lost.", zh:"我迷路了。", tip:"lost = 迷路"},
+	  {en:"Turn left at the corner.", zh:"在拐角处左转。", tip:"turn left = 左转"},
+	  {en:"How far is it?", zh:"有多远？", tip:"how far = 多远"},
+	  {en:"I need a taxi.", zh:"我需要一辆出租车。", tip:"taxi = 出租车"},
+	  {en:"The hotel is near here.", zh:"酒店在附近。", tip:"near = 附近"},
+	  {en:"What time does it open?", zh:"几点开门？", tip:"open = 开门/营业"},
+	  {en:"Can I take a photo?", zh:"我可以拍照吗？", tip:"take a photo = 拍照"},
+	  {en:"Have a nice trip!", zh:"旅途愉快！", tip:"trip = 旅行"}
+	],
+	"金钱购物": [
+	  {en:"How much is this?", zh:"这个多少钱？", tip:"how much = 多少钱"},
+	  {en:"It's too expensive.", zh:"太贵了。", tip:"too expensive = 太贵"},
+	  {en:"Can you give me a discount?", zh:"能便宜点吗？", tip:"discount = 折扣"},
+	  {en:"I will pay by card.", zh:"我刷卡支付。", tip:"pay by card = 刷卡"},
+	  {en:"Do you have change?", zh:"你有零钱吗？", tip:"change = 零钱"},
+	  {en:"I want to return this.", zh:"我想退这个。", tip:"return = 退货"},
+	  {en:"Keep the change.", zh:"不用找了。", tip:"keep = 留着"},
+	  {en:"Is there a cheaper one?", zh:"有便宜点的吗？", tip:"cheaper = 更便宜"},
+	  {en:"I am just looking.", zh:"我只是看看。", tip:"just looking = 随便看看"},
+	  {en:"The total is 100 yuan.", zh:"总共100元。", tip:"total = 总共"}
+	],
+	"社交聊天": [
+	  {en:"Nice to meet you.", zh:"很高兴认识你。", tip:"nice to meet = 很高兴认识"},
+	  {en:"Where are you from?", zh:"你是哪里人？", tip:"from = 来自"},
+	  {en:"What do you do?", zh:"你是做什么工作的？", tip:"what do you do = 你的职业"},
+	  {en:"Long time no see.", zh:"好久不见。", tip:"long time = 很久"},
+	  {en:"Let's keep in touch.", zh:"保持联系。", tip:"keep in touch = 保持联系"},
+	  {en:"Sounds good.", zh:"听起来不错。", tip:"sounds good = 不错"},
+	  {en:"I have to go now.", zh:"我得走了。", tip:"have to go = 必须走了"},
+	  {en:"Take care of yourself.", zh:"照顾好自己。", tip:"take care = 保重"},
+	  {en:"That's interesting.", zh:"那很有趣。", tip:"interesting = 有趣"},
+	  {en:"Let me ask my friend.", zh:"我问下朋友。", tip:"ask = 问"}
+	]
 };
 
-// 扁平化所有句子
-let allWords = [];
-Object.entries(UNITS).forEach(([unit, items]) => {
-  items.forEach(item => allWords.push({...item, unit}));
-});
+// 扁平化所有句子（含自定义）
+function getAllWords() {
+  let words = [];
+  Object.entries(UNITS).forEach(([unit, items]) => {
+    items.forEach(item => words.push({...item, unit}));
+  });
+  // 加载自定义句子
+  let custom = JSON.parse(localStorage.getItem('en_custom') || '[]');
+  custom.forEach(item => words.push({...item, unit: '自定义'}));
+  return words;
+}
+let allWords = getAllWords();
 
 // ── 状态 ──
 let state = {
@@ -173,7 +231,7 @@ function isLearned(en) { return state.learned.includes(en); }
 
 // ── 学习 ──
 function prepareLearn() {
-  let unlearned = allWords.filter(w => !isLearned(w.en));
+  let unlearned = getAllWords().filter(w => !isLearned(w.en));
   if (unlearned.length === 0) {
     unlearned = [...allWords]; // 全部学完就重新来
     state.learned = [];
@@ -243,9 +301,9 @@ function nextCard() {
 
 // ── 测验 ──
 function prepareQuiz() {
-  let pool = allWords.filter(w => isLearned(w.en));
+  let pool = getAllWords().filter(w => isLearned(w.en));
   if (pool.length === 0) {
-    pool = allWords;
+    pool = getAllWords();
   }
   state.quizWords = pool.sort(() => Math.random() - 0.5).slice(0, 10);
   state.quizIndex = 0;
@@ -295,7 +353,7 @@ function quizResult(correct) {
 // ── 进度 ──
 function updateProgress() {
   let learned = state.learned.length;
-  let total = allWords.length;
+  let total = getAllWords().length;
   document.getElementById('totalLearned').textContent = learned;
   document.getElementById('streakText').textContent = `🔥 连续 ${state.streak} 天`;
   document.getElementById('progressFill').style.width = `${(learned / total) * 100}%`;
@@ -322,7 +380,26 @@ function updateProgress() {
   document.getElementById('wordList').innerHTML = html;
 }
 
+
+function addCustomSentence() {
+  let en = document.getElementById('addEn').value.trim();
+  let zh = document.getElementById('addZh').value.trim();
+  let tip = document.getElementById('addTip').value.trim();
+  if (!en || !zh) { document.getElementById('addMsg').textContent = '英文和中文都要填'; return; }
+  let custom = JSON.parse(localStorage.getItem('en_custom') || '[]');
+  custom.push({en, zh, tip: tip || ''});
+  localStorage.setItem('en_custom', JSON.stringify(custom));
+  allWords = getAllWords();
+  document.getElementById('addEn').value = '';
+  document.getElementById('addZh').value = '';
+  document.getElementById('addTip').value = '';
+  document.getElementById('addMsg').textContent = '✅ 已添加！去学习吧';
+  document.getElementById('totalAll').textContent = allWords.length;
+  setTimeout(() => document.getElementById('addMsg').textContent = '', 2000);
+}
+
 function resetProgress() {
+
   if (confirm('确定要重新开始吗？所有进度会清零。')) {
     state.learned = [];
     state.streak = 0;
@@ -346,6 +423,7 @@ function switchTab(tab) {
   document.getElementById('learnDone').classList.add('hidden');
   document.getElementById('quizArea').classList.add('hidden');
   document.getElementById('progressArea').classList.add('hidden');
+  document.getElementById('addArea').classList.add('hidden');
 
   if (tab === 'learn') {
     prepareLearn();
@@ -357,6 +435,9 @@ function switchTab(tab) {
   } else if (tab === 'progress') {
     document.getElementById('progressArea').classList.remove('hidden');
     updateProgress();
+  } else if (tab === 'add') {
+    document.getElementById('addArea').classList.remove('hidden');
+    document.getElementById('totalAll').textContent = getAllWords().length;
   }
 }
 
